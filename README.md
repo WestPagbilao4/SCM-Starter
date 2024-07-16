@@ -1,7 +1,8 @@
 # Simple-Contract
 
 # Description
-MetaCrafters ATM is a decentralized application (dApp) that allows users to interact with a smart contract deployed on the Ethereum blockchain. The smart contract enables basic functionalities such as depositing ETH, withdrawing ETH, and transferring ETH to other addresses.
+
+MetaCrafters ATM is a decentralized application (dApp) enabling users to interact with a smart contract deployed on the Ethereum blockchain. This smart contract supports basic functionalities such as depositing ETH, withdrawing ETH, and transferring ETH to other addresses. Additionally, users can view their transaction history, which includes the type of transaction, the wallet address involved, and the timestamp of each transaction.
 
 ## Getting Started
 To run this dApp, ensure you have MetaMask installed in your browser. MetaMask is a digital wallet used to interact with the Ethereum blockchain.
