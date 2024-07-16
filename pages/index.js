@@ -9,11 +9,12 @@ export default function HomePage() {
   const [balance, setBalance] = useState(undefined);
   const [recipient, setRecipient] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  const [error, setError] = useState("");
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with your deployed contract address
   const atmABI = atm_abi.abi;
 
-  // Function to connect to MetaMask wallet
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
@@ -25,78 +26,92 @@ export default function HomePage() {
         getATMContract(provider);
       } catch (error) {
         console.error("Error connecting to wallet:", error);
+        setError("Error connecting to wallet. Check the console for details.");
       }
     } else {
       alert("MetaMask wallet extension not detected");
     }
   };
 
-  // Function to get instance of the deployed contract
   const getATMContract = (provider) => {
     const signer = provider.getSigner();
     const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
     setATM(atmContract);
     getBalance(atmContract);
+    getTransactionHistory(atmContract);
   };
 
-  // Function to get balance from the contract
   const getBalance = async (contract) => {
     try {
       const balance = await contract.getBalance();
       setBalance(ethers.utils.formatEther(balance)); // Convert from wei to ETH
     } catch (error) {
       console.error("Error fetching balance:", error);
+      setError("Error fetching balance. Check the console for details.");
     }
   };
 
-  // Function to deposit ETH into the contract
+  const getTransactionHistory = async (contract) => {
+    try {
+      const transactions = await contract.getTransactionHistory();
+      const history = transactions.map((tx) => ({
+        transactionType: tx.transactionType === 0 ? "Deposit" : "Withdraw",
+        account: tx.account,
+        amount: ethers.utils.formatEther(tx.amount),
+        timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
+      }));
+      setTransactionHistory(history);
+    } catch (error) {
+      console.error("Error fetching transaction history:", error);
+      setError("Error fetching transaction history. Check the console for details.");
+    }
+  };
+
   const deposit = async () => {
     try {
       const tx = await atm.deposit({ value: ethers.utils.parseEther("1") }); // Depositing 1 ETH (in wei)
       await tx.wait(); // Wait for transaction to be mined
       getBalance(atm);
+      getTransactionHistory(atm);
     } catch (error) {
       console.error("Error depositing ETH:", error);
+      setError("Error depositing ETH. Check the console for details.");
     }
   };
 
-  // Function to withdraw ETH from the contract
   const withdraw = async () => {
     try {
       const tx = await atm.withdraw(ethers.utils.parseEther("1")); // Withdrawing 1 ETH (in wei)
       await tx.wait(); // Wait for transaction to be mined
       getBalance(atm);
+      getTransactionHistory(atm);
     } catch (error) {
       console.error("Error withdrawing ETH:", error);
+      setError("Error withdrawing ETH. Check the console for details.");
     }
   };
 
-  // Function to transfer ETH to another address
   const transfer = async () => {
     try {
       const tx = await atm.transfer(recipient, ethers.utils.parseEther(transferAmount)); // Transfer amount (in wei)
       await tx.wait(); // Wait for transaction to be mined
       getBalance(atm);
+      getTransactionHistory(atm);
     } catch (error) {
       console.error("Error transferring ETH:", error);
+      setError("Error transferring ETH. Check the console for details.");
     }
   };
 
-  // Function to initialize user connection and UI
   const initUser = () => {
-    // Check if MetaMask is installed
     if (!ethWallet) {
       return <p>Please install MetaMask to use this ATM.</p>;
     }
 
-    // If no account connected, provide a button to connect
     if (!account) {
-      return (
-        <button onClick={connectWallet}>Connect MetaMask Wallet</button>
-      );
+      return <button onClick={connectWallet}>Connect MetaMask Wallet</button>;
     }
 
-    // Display user's account and balance, provide buttons for actions
     return (
       <div>
         <p>Your Account: {account}</p>
@@ -118,16 +133,23 @@ export default function HomePage() {
           />
           <button onClick={transfer}>Transfer</button>
         </div>
+        <h2>Transaction History</h2>
+        <ul>
+          {transactionHistory.map((tx, index) => (
+            <li key={index}>
+              {tx.timestamp}: {tx.transactionType} of {tx.amount} ETH to/from {tx.account}
+            </li>
+          ))}
+        </ul>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
       </div>
     );
   };
 
-  // Hook to initialize wallet connection on component mount
   useEffect(() => {
     connectWallet();
   }, []);
 
-  // Render UI
   return (
     <main className="container">
       <header>
